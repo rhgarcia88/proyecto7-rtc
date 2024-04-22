@@ -11,17 +11,15 @@ const register = async (req, res, next) =>{
       email: req.body.email,
       contraseña: req.body.contraseña,  
       añoNacimiento: req.body.añoNacimiento,
-      rol: req.body.rol,
+      rol: "User",
       imagenPerfil: req.body.imagenPerfil    
      });
-
-     const userDuplicated = await User.findOne({userName: req.body.userName});
+   
+     const userDuplicated = await User.findOne({
+      $or: [{ nombreUsuario: req.body.nombreUsuario }, { email: req.body.email }]
+    });
       if(userDuplicated){
-        return res.status(400).json("Ya existe este nombre de usuario");
-      }
-      const mailDuplicated = await User.findOne({email: req.body.email});
-      if(mailDuplicated){
-        return res.status(400).json("Ya existe un usuario con este email");
+        return res.status(400).json("Ya existe este usuario");
       }
 
      userSaved = await newUser.save();
@@ -101,9 +99,26 @@ const updateUser = async (req, res, next) =>{
     });
     return res.status(200).json(userUpdated);
   } catch (error) {
-    console.log(error);
+
     return res.status(400).json("Error en la solicitud");
   }
 }
 
-module.exports = {register,login,deleteUser,getUsers,updateUser}
+const makeAdmin = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const newUser = new User(req.body);
+    newUser._id = id;
+    newUser.rol = "Admin";
+    const userUpdated = await User.findByIdAndUpdate(id, newUser, {
+      new: true,
+    });
+    return res.status(200).json(userUpdated);
+   
+  } catch (error) {
+    return res.status(400).json("Error en la solicitud");
+  }
+
+}
+
+module.exports = {register,login,deleteUser,getUsers,updateUser,makeAdmin}
